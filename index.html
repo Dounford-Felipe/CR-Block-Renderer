@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CR Block Renderer</title>
+  <script src="js/main.js"></script>
+	<link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+	<h3>Top Image</h3>
+	<input type='file' id="topImage" style="display:none">
+	<button id="topImageButton" onclick="document.getElementById('topImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
+	<img id="topImagePreview" onclick="document.getElementById('topImage').click()" src="" style="display:none;max-width: 50px;image-rendering: pixelated;">
+	<h3>Side Image</h3>
+	<input type='file' id="sideImage" style="display:none">
+	<button id="sideImageButton" onclick="document.getElementById('sideImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
+	<img id="sideImagePreview" onclick="document.getElementById('sideImage').click()" src="" style="display:none;max-width: 50px;image-rendering: pixelated;">
+	<h3>Block Renderer</h3>
+</body>
+</html>
