@@ -1,10 +1,9 @@
 const SideImage = new Image();
 const TopImage = new Image();
-const canvas = document.createElement('canvas');
+let canvas = ""
 
 window.addEventListener("load", function(event) {
-    //canvas.width = cubeWidth;
-    //canvas.height = faceSize * 2;
+    canvas = document.getElementById('blockCanvas')
     canvas.width = 180;
     canvas.height = 200;
     document.body.appendChild(canvas);
@@ -12,11 +11,11 @@ window.addEventListener("load", function(event) {
 		const [file] = document.getElementById('topImage').files
 		if (file) {
 			document.getElementById('topImagePreview').src = URL.createObjectURL(file)
-			SideImage.src = URL.createObjectURL(file)
+			TopImage.src = URL.createObjectURL(file)
 			document.getElementById('topImagePreview').style.display = "";
 			document.getElementById('topImageButton').style.display = "none";
-			SideImage.onload = function(){
-				if (!TopImage.src == "") {drawCube(canvas)};
+			TopImage.onload = function(){
+				if (!SideImage.src == "") {drawCube(canvas)};
 			}
 		}
 	})
@@ -24,11 +23,11 @@ window.addEventListener("load", function(event) {
 		const [file] = document.getElementById('sideImage').files
 		if (file) {
 			document.getElementById('sideImagePreview').src = URL.createObjectURL(file)
-			TopImage.src = URL.createObjectURL(file)
+			SideImage.src = URL.createObjectURL(file)
 			document.getElementById('sideImagePreview').style.display = "";
 			document.getElementById('sideImageButton').style.display = "none";
-			TopImage.onload = function(){
-				if (!SideImage.src == "") {drawCube(canvas)};
+			SideImage.onload = function(){
+				if (!TopImage.src == "") {drawCube(canvas)};
 			}
 		}
 	})
@@ -37,7 +36,6 @@ window.addEventListener("load", function(event) {
 
 
 function drawCube() {
-
     const faceSize = 100
     const radians = 30 * Math.PI / 180;
     const cubeWidth = faceSize * Math.cos(radians) * 2;
@@ -96,4 +94,15 @@ function drawCube() {
 	ctx.drawImage(TopImage, 0, 0, faceSize, faceSize);
     ctx.restore();
 
+}
+
+function downloadCube() {
+	if (TopImage.src == "" || SideImage.src == "") {
+		return;
+	} else {
+		let downloadLink = document.createElement('a');
+		downloadLink.download = 'CRBlock.png';
+		downloadLink.href = document.getElementById('blockCanvas').toDataURL();
+		downloadLink.click();
+	}
 }
