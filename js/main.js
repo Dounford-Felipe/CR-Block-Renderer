@@ -44,15 +44,17 @@ function drawCube() {
         y: canvas.height / 2
     };
 
-    const ctx = canvas.getContext('2d');
+	const ctx = canvas.getContext('2d');
 	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0)';
-    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.save();
+	ctx.fillStyle = 'rgba(0, 0, 0, 0)';
+	ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+	ctx.imageSmoothingEnabled = false;
+
 
     const defaultMat = [1, 0, 0, 1, 0, 0];
 
-    // Left (red) side
+    // Left side
     const leftMat = new DOMMatrix(defaultMat);
     leftMat.translateSelf(centerPosition.x - cubeWidth / 2, centerPosition.y - faceSize / 2);
     leftMat.skewYSelf(30);
@@ -60,7 +62,7 @@ function drawCube() {
     ctx.fillStyle = '#F00';
 	ctx.drawImage(SideImage, 0, 0, cubeWidth / 2, faceSize);
 
-    // Right (blue) side
+    // Right side
     const rightMat = new DOMMatrix(defaultMat);
     rightMat.translateSelf(centerPosition.x, centerPosition.y);
     rightMat.skewYSelf(-30);
@@ -72,7 +74,7 @@ function drawCube() {
 	ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 	ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
 
-    // Top (yellow) side
+    // Top side
     const topMat = new DOMMatrix(defaultMat);
     const toOriginMat = new DOMMatrix(defaultMat);
     const fromOriginMat = new DOMMatrix(defaultMat);
@@ -81,7 +83,7 @@ function drawCube() {
 
     toOriginMat.translateSelf(-faceSize / 2, -faceSize / 2);
     fromOriginMat.translateSelf(centerPosition.x, centerPosition.y - faceSize / 2);
-    rotMat.rotateSelf(0, 0, -45);
+    rotMat.rotateSelf(0, 0, 45);
     scaleMat.scaleSelf(1.24, (faceSize / cubeWidth) * 1.24);
 
     topMat.preMultiplySelf(toOriginMat);
