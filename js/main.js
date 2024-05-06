@@ -31,6 +31,9 @@ window.addEventListener("load", function(event) {
 			}
 		}
 	})
+	document.getElementById('shadowBlock').addEventListener("change", function(event) {
+		if (!TopImage.src == "" && !SideImage.src == "") {drawCube(canvas)};
+	})
 
 });
 
@@ -70,9 +73,11 @@ function drawCube() {
     ctx.fillStyle = '#00F';
 	ctx.drawImage(SideImage, 0, 0, cubeWidth / 2, faceSize);
 	
-	//Change the a to control shadow
-	ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-	ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
+	if (document.getElementById('shadowBlock').checked) {
+		//Change the a to control shadow
+		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+		ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
+	}
 
     // Top side
     const topMat = new DOMMatrix(defaultMat);
