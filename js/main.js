@@ -4,6 +4,7 @@ const TopImage = new Image();
 let canvas = "";
 let twoFaces = false;
 let hasImage = false;
+let isSlab = false;
 
 window.addEventListener("load", function(event) {
     canvas = document.getElementById('blockCanvas')
@@ -61,6 +62,15 @@ window.addEventListener("load", function(event) {
 	document.getElementById('shadowBlock').addEventListener("change", function(event) {
 		if (!TopImage.src == "" && !LeftImage.src == "" && (twoFaces == false || !RightImage.src == "")) {drawCube(canvas)};
 	})
+	document.getElementById('isSlab').addEventListener("change", function(event) {
+		if (event.currentTarget.checked) {
+			isSlab = true;
+			if (!TopImage.src == "" && !LeftImage.src == "" && (twoFaces == false || !RightImage.src == "")) {drawCube(canvas)};
+		} else {
+			isSlab = false;
+			if (!TopImage.src == "" && !LeftImage.src == "" && (twoFaces == false || !RightImage.src == "")) {drawCube(canvas)};
+		}
+	})
 	document.getElementById('twoFaces').addEventListener("change", function(event) {
 		if (event.currentTarget.checked) {
 			document.getElementById('leftH3').innerText = "Left Image";
@@ -104,7 +114,11 @@ function drawCube() {
     leftMat.skewYSelf(30);
     ctx.setTransform(leftMat);
     ctx.fillStyle = '#F00';
-	ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
+	if (isSlab) {
+		ctx.drawImage(LeftImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+	} else {
+		ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
+	}
 
     // Right side
     const rightMat = new DOMMatrix(defaultMat);
@@ -113,15 +127,27 @@ function drawCube() {
     ctx.setTransform(rightMat);
     ctx.fillStyle = '#00F';
 	if (twoFaces) {
-		ctx.drawImage(RightImage, 0, 0, cubeWidth / 2, faceSize);
+		if (isSlab) {
+			ctx.drawImage(RightImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+		} else {
+			ctx.drawImage(RightImage, 0, 0, cubeWidth / 2, faceSize);
+		}
 	} else {
-		ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
+		if (isSlab) {
+			ctx.drawImage(LeftImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+		} else {
+			ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
+		}
 	}
 	
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-		ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
+		if (isSlab) {
+			ctx.fillRect(0, 0 + (faceSize/2), cubeWidth / 2, faceSize / 2);
+		} else {
+			ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
+		}
 	}
 
     // Top side
@@ -132,7 +158,11 @@ function drawCube() {
     const scaleMat = new DOMMatrix(defaultMat);
 
     toOriginMat.translateSelf(-faceSize / 2, -faceSize / 2);
-    fromOriginMat.translateSelf(centerPosition.x, centerPosition.y - faceSize / 2);
+	if (isSlab) {
+		fromOriginMat.translateSelf(centerPosition.x, (centerPosition.y - faceSize / 2) * 2);
+	} else {
+		fromOriginMat.translateSelf(centerPosition.x, centerPosition.y - faceSize / 2);
+	}
     rotMat.rotateSelf(0, 0, 45);
     scaleMat.scaleSelf(1.24, (faceSize / cubeWidth) * 1.24);
 
