@@ -1,6 +1,9 @@
-const SideImage = new Image();
+const LeftImage = new Image();
+const RightImage = new Image();
 const TopImage = new Image();
-let canvas = ""
+let canvas = "";
+let twoFaces = false;
+let hasImage = false;
 
 window.addEventListener("load", function(event) {
     canvas = document.getElementById('blockCanvas')
@@ -15,30 +18,68 @@ window.addEventListener("load", function(event) {
 			document.getElementById('topImagePreview').style.display = "";
 			document.getElementById('topImageButton').style.display = "none";
 			TopImage.onload = function(){
-				if (!SideImage.src == "") {drawCube(canvas)};
+				if (twoFaces) {
+					if (!LeftImage.src == "" && !RightImage.src == "") {drawCube(canvas)};
+				} else {
+					if (!LeftImage.src == "") {drawCube(canvas)};
+				}
 			}
 		}
 	})
-	document.getElementById('sideImage').addEventListener("change", function(event) {
-		const [file] = document.getElementById('sideImage').files
+	document.getElementById('leftImage').addEventListener("change", function(event) {
+		const [file] = document.getElementById('leftImage').files
 		if (file) {
-			document.getElementById('sideImagePreview').src = URL.createObjectURL(file)
-			SideImage.src = URL.createObjectURL(file)
-			document.getElementById('sideImagePreview').style.display = "";
-			document.getElementById('sideImageButton').style.display = "none";
-			SideImage.onload = function(){
-				if (!TopImage.src == "") {drawCube(canvas)};
+			document.getElementById('leftImagePreview').src = URL.createObjectURL(file)
+			LeftImage.src = URL.createObjectURL(file)
+			document.getElementById('leftImagePreview').style.display = "";
+			document.getElementById('leftImageButton').style.display = "none";
+			LeftImage.onload = function(){
+				if (twoFaces) {
+					if (!TopImage.src == "" && !RightImage.src == "") {drawCube(canvas)};
+				} else {
+					if (!TopImage.src == "") {drawCube(canvas)};
+				}
+			}
+		}
+	})
+	document.getElementById('rightImage').addEventListener("change", function(event) {
+		const [file] = document.getElementById('rightImage').files
+		if (file) {
+			document.getElementById('rightImagePreview').src = URL.createObjectURL(file)
+			RightImage.src = URL.createObjectURL(file)
+			document.getElementById('rightImagePreview').style.display = "";
+			document.getElementById('rightImageButton').style.display = "none";
+			RightImage.onload = function(){
+				if (twoFaces) {
+					if (!TopImage.src == "" && !LeftImage.src == "") {drawCube(canvas)};
+				} else {
+					if (!TopImage.src == "") {drawCube(canvas)};
+				}
 			}
 		}
 	})
 	document.getElementById('shadowBlock').addEventListener("change", function(event) {
-		if (!TopImage.src == "" && !SideImage.src == "") {drawCube(canvas)};
+		if (!TopImage.src == "" && !LeftImage.src == "" && (twoFaces == false || !RightImage.src == "")) {drawCube(canvas)};
+	})
+	document.getElementById('twoFaces').addEventListener("change", function(event) {
+		if (event.currentTarget.checked) {
+			document.getElementById('leftH3').innerText = "Left Image";
+			document.getElementById('rightDiv').style.display = "";
+			twoFaces = true;
+			if (!TopImage.src == "" && !LeftImage.src == "" && !RightImage.src == "") {drawCube(canvas)};
+		} else {
+			document.getElementById('leftH3').innerText = "Side Image";
+			document.getElementById('rightDiv').style.display = "none";
+			twoFaces = false;
+			if (!TopImage.src == "" && !LeftImage.src == "") {drawCube(canvas)};
+		}
 	})
 
 });
 
 
 function drawCube() {
+	hasImage = true;
     const faceSize = 100
     const radians = 30 * Math.PI / 180;
     const cubeWidth = faceSize * Math.cos(radians) * 2;
@@ -63,7 +104,7 @@ function drawCube() {
     leftMat.skewYSelf(30);
     ctx.setTransform(leftMat);
     ctx.fillStyle = '#F00';
-	ctx.drawImage(SideImage, 0, 0, cubeWidth / 2, faceSize);
+	ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
 
     // Right side
     const rightMat = new DOMMatrix(defaultMat);
@@ -71,7 +112,11 @@ function drawCube() {
     rightMat.skewYSelf(-30);
     ctx.setTransform(rightMat);
     ctx.fillStyle = '#00F';
-	ctx.drawImage(SideImage, 0, 0, cubeWidth / 2, faceSize);
+	if (twoFaces) {
+		ctx.drawImage(RightImage, 0, 0, cubeWidth / 2, faceSize);
+	} else {
+		ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
+	}
 	
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
@@ -104,9 +149,7 @@ function drawCube() {
 }
 
 function downloadCube() {
-	if (TopImage.src == "" || SideImage.src == "") {
-		return;
-	} else {
+	if (hasImage) {
 		let downloadLink = document.createElement('a');
 		downloadLink.download = 'CRBlock.png';
 		downloadLink.href = document.getElementById('blockCanvas').toDataURL();
