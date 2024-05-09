@@ -115,7 +115,7 @@ function drawCube() {
     ctx.setTransform(leftMat);
     ctx.fillStyle = '#F00';
 	if (isSlab) {
-		ctx.drawImage(LeftImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+		ctx.drawImage(LeftImage, 0, 0, LeftImage.width, LeftImage.height / 2, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
 	} else {
 		ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
 	}
@@ -128,13 +128,13 @@ function drawCube() {
     ctx.fillStyle = '#00F';
 	if (twoFaces) {
 		if (isSlab) {
-			ctx.drawImage(RightImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+			ctx.drawImage(RightImage, 0, 0, RightImage.width, RightImage.height / 2, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
 		} else {
 			ctx.drawImage(RightImage, 0, 0, cubeWidth / 2, faceSize);
 		}
 	} else {
 		if (isSlab) {
-			ctx.drawImage(LeftImage, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
+			ctx.drawImage(LeftImage, 0, 0, LeftImage.width, LeftImage.height / 2, 0, 0 + (faceSize/2), cubeWidth / 2, faceSize/2);
 		} else {
 			ctx.drawImage(LeftImage, 0, 0, cubeWidth / 2, faceSize);
 		}
