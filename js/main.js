@@ -207,8 +207,10 @@ function drawCube() {
 	
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
+		ctx.globalCompositeOperation = 'source-atop';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		ctx.fillRect(0, 0, cubeWidth / 2, faceSize);
+		ctx.globalCompositeOperation = 'source-over';
 	}
 
     // Top side
@@ -277,8 +279,10 @@ function drawSlab() {
 	
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
+		ctx.globalCompositeOperation = 'source-atop';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		ctx.fillRect(0, 0 + (faceSize/2), cubeWidth / 2, faceSize / 2);
+		ctx.globalCompositeOperation = 'source-over';
 	}
 
     // Top side
@@ -348,8 +352,10 @@ function drawStairs() {
 	
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
+		ctx.globalCompositeOperation = 'source-atop';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		ctx.fillRect(0, faceSize/2, cubeWidth / 2, faceSize/2);
+		ctx.globalCompositeOperation = 'source-over';
 	}
 	
 	//Right Top side
@@ -364,8 +370,10 @@ function drawStairs() {
 	}
 	if (document.getElementById('shadowBlock').checked) {
 		//Change the a to control shadow
+		ctx.globalCompositeOperation = 'source-atop';
 		ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
 		ctx.fillRect(0, faceSize/2, cubeWidth / 2, faceSize/2);
+		ctx.globalCompositeOperation = 'source-over';
 	}
     
 
