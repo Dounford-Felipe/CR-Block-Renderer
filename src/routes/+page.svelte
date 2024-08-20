@@ -279,7 +279,6 @@ function downloadCube() {
 {/if}
 <div style="display: flex;">
 	<canvas width="300" height="300" id="blockCanvas" ></canvas>
-	<img src="./slab.png" alt="" >
 </div>
 
 <style>
