@@ -249,9 +249,9 @@ function configureStairs() {
 		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
 	];
 
-	const geometry = new THREE.BoxGeometry( 0.635, 0.635, 1.25 );
+	const geometry = new THREE.BoxGeometry( 0.625, 0.635, 1.25 );
 	shape = new THREE.Mesh( geometry, materials );
-	shape.position.set(-0.307, -0.31, 0);
+	shape.position.set(-0.3125, -0.3175, 0);
 	scene.add( shape );
 	
 	const textureLeft2 = textureLoader.load(images['leftImage'].src);
@@ -289,7 +289,7 @@ function configureStairs() {
 	];
 	
 	shape2 = new THREE.Mesh( geometry, materials2 );
-	shape2.position.set(-0.307, 0.325, 0);
+	shape2.position.set(-0.3125, 0.3175, 0);
 	scene.add( shape2 );
 
 	const textureLeft3 = textureLoader.load(images['leftImage'].src);
@@ -327,12 +327,12 @@ function configureStairs() {
 	];
 	
 	shape3 = new THREE.Mesh( geometry, materials3 );
-	shape3.position.set(0.327, -0.31, 0);
+	shape3.position.set(0.3125, -0.3175, 0);
 	scene.add( shape3 );
 
 
 	if (hasShadow) {
-		const shadowGeometry = new THREE.BoxGeometry( 0.635, 0.635, 1.25 );
+		const shadowGeometry = new THREE.BoxGeometry( 0.625, 0.635, 1.25 );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),  // True Right
 			new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
@@ -343,7 +343,7 @@ function configureStairs() {
 		];
 
 		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
-		shadow.position.set(-0.307, -0.31, 0);
+		shadow.position.set(-0.3125, -0.3175, 0);
 		scene.add( shadow );
 		
 		const shadowMaterial2 = [
@@ -356,7 +356,7 @@ function configureStairs() {
 		];
 
 		shadow2 = new THREE.Mesh( shadowGeometry, shadowMaterial2 );
-		shadow2.position.set(-0.307, 0.325, 0);
+		shadow2.position.set(-0.3125, 0.3175, 0);
 		scene.add( shadow2 );
 		
 		const shadowMaterial3 = [
@@ -368,7 +368,7 @@ function configureStairs() {
 			new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
 		];
 		shadow3 = new THREE.Mesh( shadowGeometry, shadowMaterial3 );
-		shadow3.position.set(0.327, -0.31, 0);
+		shadow3.position.set(0.3125, -0.3175, 0);
 		scene.add( shadow3 );
 	}
 
