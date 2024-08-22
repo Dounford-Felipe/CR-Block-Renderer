@@ -17,6 +17,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"browser-image-compression": "^2.0.2",
 		"three": "^0.167.1"
 	}
 }

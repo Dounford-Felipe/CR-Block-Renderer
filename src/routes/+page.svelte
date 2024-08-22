@@ -1,5 +1,6 @@
 <script>
 import { onMount } from 'svelte';
+import imageCompression from 'browser-image-compression';
 import * as THREE from 'three';
 const textureLoader = new THREE.TextureLoader();
 let images = {};
@@ -381,12 +382,33 @@ function drawLoop() {
 	renderer.render( scene, camera );
 }
 
-function downloadCube() {
+async function compressImage() {
+	const dataFile = document.getElementById('blockCanvas').toDataURL();
+
+	const imageFile = await (await fetch(dataFile)).blob();
+
+	const options = {
+		maxSizeMB: 1,
+		maxWidthOrHeight: 1920,
+		useWebWorker: true,
+	}
+	try {
+		const compressedFile = await imageCompression(imageFile, options);
+
+		await downloadCompressed(compressedFile);
+	} catch (error) {
+		console.log(error);
+	}
+
+}
+
+function downloadCompressed(image) {
 	let downloadLink = document.createElement('a');
 	downloadLink.download = 'CRBlock.png';
-	downloadLink.href = document.getElementById('blockCanvas').toDataURL();
+	downloadLink.href = URL.createObjectURL(image);
 	downloadLink.click();
 }
+
 </script>
 
 <div style="width: fit-content;text-align:center;">
@@ -431,7 +453,7 @@ function downloadCube() {
 ">
 	<canvas width="300" height="300" id="blockCanvas" ></canvas>
 	{#if hasImage}
-		<button on:click={downloadCube} style="padding: 0;height: fit-content;">Download Cube <i class='bx bxs-download'></i></button>
+		<button on:click={compressImage} style="padding: 0;height: fit-content;">Download Cube <i class='bx bxs-download'></i></button>
 	{/if}
 </div>
 
