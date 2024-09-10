@@ -9,11 +9,12 @@ let hasImage = false;
 let hasShadow = true;
 let isSlab = false;
 let isStair = false;
+let isItem = false;
 let scene = {}
 let camera = {position: {x: 0, y: 0, z: 0}}
 let renderer = {}
 let shape;
-let shape2;
+let shape2 = {rotation: {x: 0, y: 0, z: 0}};
 let shape3;
 let shadow;
 let shadow2;
@@ -46,6 +47,10 @@ const updateCanvas = () => {
 				configureCube();
 			}
 		};
+	} else if (isItem) {
+		if (!images['topImage'].src == "") {
+			configureItem();
+		}
 	} else {
 		if (!images['leftImage'].src == "" && !images['topImage'].src == "") {
 			if (isStair) {
@@ -59,15 +64,17 @@ const updateCanvas = () => {
 	}
 }
 
-const slabOrStair = (type) => {
+const renderType = (type) => {
 	if (type == 'slab') {
-		if (document.getElementById('isStair').checked) {
-			isStair = false
-		};
+		isStair = false
+		isItem = false
 	} else if (type == 'stair') {
-		if (document.getElementById('isSlab').checked) {
-			isSlab = false
-		}
+		isSlab = false
+		isItem = false
+	} else if (type == 'item') {
+		isSlab = false
+		isStair = false
+		twoFaces = false
 	}
 	updateCanvas();
 }
@@ -80,6 +87,8 @@ const removeOld = () => {
         scene.remove(shadow2);
         scene.remove(shadow3);
         scene.remove(shadow);
+		shape2.rotation.y = 0;
+		shadow.rotation.y = 0;
     }
 }
 
@@ -378,6 +387,34 @@ function configureStairs() {
 	hasImage = true;
 }
 
+function configureItem() {
+	removeOld();
+	const texture = textureLoader.load(images['topImage'].src);
+	texture.magFilter = THREE.NearestFilter;
+	texture.colorSpace = THREE.SRGBColorSpace;
+
+	const material = new THREE.MeshBasicMaterial( { map: texture, transparent: true, alphaTest: 0.9 } )
+
+	const geometry = new THREE.PlaneGeometry( 2, 2 );
+	shape = new THREE.Mesh( geometry, material );
+	scene.add( shape );
+
+	shape2 = new THREE.Mesh( geometry, material );
+	shape2.rotation.y = 1
+	scene.add( shape2 );
+
+	if (hasShadow) {
+		const shadowGeometry = new THREE.PlaneGeometry( 2, 2 );
+		const shadowMaterial = new THREE.MeshBasicMaterial({ map: texture, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 });
+		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
+		shadow.rotation.y = 1
+		scene.add( shadow );
+	}
+
+	renderer.render(scene, camera);
+	hasImage = true;
+}
+
 function drawLoop() {
 	renderer.render( scene, camera );
 }
@@ -412,11 +449,12 @@ function downloadCompressed(image) {
 </script>
 
 <div style="width: fit-content;text-align:center;">
-	<h3>Top Image</h3>
+	<h3>{isItem ? "Item Image" : "Top Image"}</h3>
 	<input type='file' id="topImage" style="display:none" on:change={() => updateImage('topImage')}>
 	<button id="topImageButton" onclick="document.getElementById('topImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
 	<img id="topImagePreview" alt="Preview of the top" onclick="document.getElementById('topImage').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
 </div>
+{#if !isItem}
 <div style="display:flex;text-align:center;">
 	<div>
 		<h3 id="leftH3">{twoFaces ? "Left Image" : "Side Image"}</h3>
@@ -435,19 +473,17 @@ function downloadCompressed(image) {
 		</div>
 	{/if}
 </div>
+{/if}
 <input type="checkbox" id="twoFaces" bind:checked={twoFaces} on:change={updateCanvas}><label for="twoFaces">Two Sides</label>
 <br>
 <input type="checkbox" id="shadowBlock" bind:checked={hasShadow} on:change={updateCanvas}><label for="shadowBlock">Has Shadow</label>
 <br>
-<input type="checkbox" id="isSlab" bind:checked={isSlab} on:change={() => slabOrStair('slab')}><label for="isSlab">Is Slab</label>
+<input type="checkbox" id="isSlab" bind:checked={isSlab} on:change={() => renderType('slab')}><label for="isSlab">Is Slab</label>
 <br>
-<input type="checkbox" id="isStair" bind:checked={isStair} on:change={() => slabOrStair('stair')}><label for="isStair">Is Stair</label>
+<input type="checkbox" id="isStair" bind:checked={isStair} on:change={() => renderType('stair')}><label for="isStair">Is Stair</label>
 <br>
-<label for="x">Camera Position X and Z</label>
-<input type="number" name="x" id="x" bind:value={camera.position.x} on:input={() => {camera.lookAt(0, 0, 0);}}>
-<br>
-<label for="x">Camera Position Y</label>
-<input type="number" name="y" id="y" bind:value={camera.position.y} on:input={() => {camera.lookAt(0, 0, 0);}}>
+<input type="checkbox" id="isItem" bind:checked={isItem} on:change={() => renderType('item')}><label for="isItem">Is Item</label>
+
 <h3>Block Renderer</h3>
 <div style="display: flex;flex-direction: column;width: fit-content;
 ">
