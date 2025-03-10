@@ -1,0 +1,29 @@
+{
+	"textures": {
+		"torch": {
+			"fileName": "base:textures/blocks/torch.png"
+		}
+	},
+	"cuboids": [{
+			"localBounds": [7,0,7,9,11,9],
+			"faces": {
+				"localPosY": {"uv":[10,14,8,12],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegY": {"uv":[10,0,8,2],"ambientocclusion":false,"cullFace":true,"texture":"torch","uvRotation":0},
+				"localNegZ": {"uv":[0,11,2,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosZ": {"uv":[4,11,6,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosX": {"uv":[2,11,4,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegX": {"uv":[6,11,8,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0}
+			}
+		}, {
+			"localBounds": [7,7,7,9,9,9],
+			"inflate": 0.1,
+			"faces": {
+				"localPosY": {"uv":[8,6,10,8],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegY": {"uv":[8,8,10,10],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegZ": {"uv":[0,11,2,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosZ": {"uv":[4,11,6,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosX": {"uv":[2,11,4,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegX": {"uv":[6,11,8,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0}
+			}
+		}]
+}

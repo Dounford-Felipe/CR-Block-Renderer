@@ -3,13 +3,43 @@ import { onMount } from 'svelte';
 import imageCompression from 'browser-image-compression';
 import * as THREE from 'three';
 const textureLoader = new THREE.TextureLoader();
+const cubeModel = [
+	{
+		"localBounds": [0,0,0, 16,16,16],
+		"faces":
+		{
+			"localNegX": {"uv": [ 0, 0, 16, 16 ], "texture": "side"},
+			"localPosX": {"uv": [ 0, 0, 16, 16 ], "texture": "side"},
+
+			"localNegY": {"uv": [ 0, 0, 16, 16 ], "texture": "bottom"},
+			"localPosY": {"uv": [ 0, 0, 16, 16 ], "texture": "top"},
+
+			"localNegZ": {"uv": [ 0, 0, 16, 16 ], "texture": "side"},
+			"localPosZ": {"uv": [ 0, 0, 16, 16 ], "texture": "side"}
+		}
+	}
+];
+const slabModel = [
+	{
+		"localBounds": [0,8,0, 16,16,16],
+		"faces":
+		{
+			"localNegX": {"uv": [ 0, 0, 16, 8 ], "texture": "slab_side"},
+			"localPosX": {"uv": [ 0, 0, 16, 8 ], "texture": "slab_side"},
+
+			"localNegY": {"uv": [ 0, 0, 16, 16 ], "texture": "slab_bottom"},
+			"localPosY": {"uv": [ 0, 0, 16, 16 ], "texture": "slab_top"},
+
+			"localNegZ": {"uv": [ 0, 0, 16, 8 ], "texture": "slab_side"},
+			"localPosZ": {"uv": [ 0, 0, 16, 8 ], "texture": "slab_side"}
+		}
+	}
+];
 let images = {};
 let twoFaces = false;
 let hasImage = false;
 let hasShadow = true;
-let isSlab = false;
-let isStair = false;
-let isItem = false;
+let renderType = 'Cube';
 let scene = {}
 let camera = {position: {x: 0, y: 0, z: 0}}
 let renderer = {}
@@ -19,6 +49,37 @@ let shape3;
 let shadow;
 let shadow2;
 let shadow3;
+let customModel = {
+	"textures": {
+		"torch": {
+			"fileName": "base:textures/blocks/torch.png"
+		}
+	},
+	"cuboids": [{
+			"localBounds": [7,0,7,9,11,9],
+			"faces": {
+				"localPosY": {"uv":[10,14,8,12],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegY": {"uv":[10,0,8,2],"ambientocclusion":false,"cullFace":true,"texture":"torch","uvRotation":0},
+				"localNegZ": {"uv":[0,11,2,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosZ": {"uv":[4,11,6,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosX": {"uv":[2,11,4,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegX": {"uv":[6,11,8,0],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0}
+			}
+		}, {
+			"localBounds": [7,7,7,9,9,9],
+			"inflate": 0.1,
+			"faces": {
+				"localPosY": {"uv":[8,6,10,8],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegY": {"uv":[8,8,10,10],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegZ": {"uv":[0,11,2,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosZ": {"uv":[4,11,6,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localPosX": {"uv":[2,11,4,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0},
+				"localNegX": {"uv":[6,11,8,13],"ambientocclusion":false,"cullFace":false,"texture":"torch","uvRotation":0}
+			}
+		}]
+};
+let shapes = [];
+let shadows = [];
 
 $: camera.position.z = camera.position.x
 
@@ -37,49 +98,43 @@ const updateImage = (image) => {
 }
 
 const updateCanvas = () => {
-	if (twoFaces) {
-		if (!images['leftImage'].src == "" && !images['rightImage'].src == "" && !images['topImage'].src == "") {
-			if (isStair) {
-				configureStairs();
-			} else if (isSlab) {
-				configureSlab();
-			} else {
-				configureCube();
-			}
-		};
-	} else if (isItem) {
-		if (!images['topImage'].src == "") {
+	if (renderType == 'Item') {
+		if (images['topImage'].src !== "") {
 			configureItem();
 		}
 	} else {
-		if (!images['leftImage'].src == "" && !images['topImage'].src == "") {
-			if (isStair) {
-				configureStairs();
-			} else if (isSlab) {
-				configureSlab();
-			} else {
-				configureCube();
+		const hasImages = images['leftImage'].src !== "" && images['topImage'].src !== "";
+		const hasRightImage = images['rightImage'].src !== "" || twoFaces == false;
+		const hasCustomModel = customModel !== null || renderType !== 'Json';
+		if (hasImages && hasRightImage && hasCustomModel) {
+			switch (renderType) {
+				case 'Slab':
+					configureSlab();
+					break;
+				case 'Stair':
+					configureStairs();
+					break;
+				case 'Json':
+					configureJson();
+					break;
+				default:
+					configureCube();
+					break;
 			}
-		};
+		}
 	}
 }
 
-const renderType = (type) => {
-	if (type == 'slab') {
-		isStair = false
-		isItem = false
-	} else if (type == 'stair') {
-		isSlab = false
-		isItem = false
-	} else if (type == 'item') {
-		isSlab = false
-		isStair = false
-		twoFaces = false
-	}
-	updateCanvas();
+const updateJson = () => {
+	if (customModel.parent == "base:models/blocks/cube.json") {
+		customModel.cuboids = cubeModel;
+	};
+	configureJson();
 }
 
 const removeOld = () => {
+	shapes.forEach(shape => scene.remove(shape));
+	shadows.forEach(shadow => scene.remove(shadow));
 	if (shape) {
         scene.remove(shape);
         scene.remove(shape2);
@@ -96,8 +151,12 @@ onMount(() => {
 	images.leftImage = new Image();
 	images.rightImage = new Image();
 	images.topImage = new Image();
+	images.leftImage.src = "grass_side.png";
+	images.rightImage.src = "grass_side.png";
+	images.topImage.src = "magma.png";
 	initThree()
 	renderer.setAnimationLoop( drawLoop );
+	configureJson();
 })
 
 function initThree() {
@@ -117,6 +176,66 @@ function initThree() {
 	camera.position.x = 6;
 	camera.position.y = 4.9;
 	camera.lookAt(0, 0, 0);
+}
+
+function configureJson() {
+	removeOld();
+	customModel.cuboids.forEach((cuboid,index) => {
+		if(index == 0) {return;}
+		const textureLeft = textureLoader.load(images['leftImage'].src);
+		textureLeft.magFilter = THREE.NearestFilter;
+		textureLeft.colorSpace = THREE.SRGBColorSpace;
+
+		let textureRight;
+		if (twoFaces) {
+			textureRight = textureLoader.load(images['rightImage'].src);
+		} else {
+			textureRight = textureLoader.load(images['leftImage'].src);
+		}
+		textureRight.magFilter = THREE.NearestFilter;
+		textureRight.colorSpace = THREE.SRGBColorSpace;
+
+		const textureTop = textureLoader.load(images['topImage'].src);
+		textureTop.magFilter = THREE.NearestFilter;
+		textureTop.colorSpace = THREE.SRGBColorSpace;
+		textureTop.rotation = Math.PI / 2;
+		textureTop.center.set(0.5, 0.5);
+
+		const materials = [
+			new THREE.MeshBasicMaterial( { map: textureRight, transparent: true, alphaTest: 0.9 } ),  // True Right
+			new THREE.MeshBasicMaterial(),  // Ignore
+			new THREE.MeshBasicMaterial( { map: textureTop, transparent: true, alphaTest: 0.5 } ),   // True Top
+			new THREE.MeshBasicMaterial(),// Ignore
+			new THREE.MeshBasicMaterial( { map: textureLeft, transparent: true, alphaTest: 0.5 } ),  // True Left
+			new THREE.MeshBasicMaterial()   // Ignore
+		];
+
+		const bounds = cuboid.localBounds;
+		const sizes = [
+			(bounds[3] - bounds[0]) / 12.8,
+			(bounds[4] - bounds[1]) / 12.59,
+			(bounds[5] - bounds[2]) / 12.8
+		];
+
+		const geometry = new THREE.BoxGeometry( ...sizes );
+		shapes.push(new THREE.Mesh( geometry, materials ));
+
+		if (hasShadow) {
+			const shadowMaterial = [
+				new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
+				new THREE.MeshBasicMaterial(), // Ignore
+				new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }), // Top Side Shadow
+				new THREE.MeshBasicMaterial(), // Ignore
+				new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
+				new THREE.MeshBasicMaterial()  // Ignore
+			];
+			shapes.push(new THREE.Mesh( geometry, shadowMaterial ));
+		}
+		});
+
+	shapes.forEach(shape => scene.add(shape));
+	renderer.render(scene, camera);
+	hasImage = true;
 }
 
 function configureCube() {
@@ -142,11 +261,11 @@ function configureCube() {
 
 	const materials = [
 		new THREE.MeshBasicMaterial( { map: textureRight, transparent: true, alphaTest: 0.9 } ),  // True Right
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+		new THREE.MeshBasicMaterial(),  // Ignore
 		new THREE.MeshBasicMaterial( { map: textureTop, transparent: true, alphaTest: 0.5 } ),   // True Top
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+		new THREE.MeshBasicMaterial(),// Ignore
 		new THREE.MeshBasicMaterial( { map: textureLeft, transparent: true, alphaTest: 0.5 } ),  // True Left
-		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+		new THREE.MeshBasicMaterial()   // Ignore
 	];
 
 	const geometry = new THREE.BoxGeometry( 1.25, 1.27, 1.25 );
@@ -158,11 +277,11 @@ function configureCube() {
 		const shadowGeometry = new THREE.BoxGeometry( 1.25, 1.27, 1.25 );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 }), // Ignore
+			new THREE.MeshBasicMaterial(), // Ignore
 			new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }), // Top Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 }), // Ignore
+			new THREE.MeshBasicMaterial(), // Ignore
 			new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 })  // Ignore
+			new THREE.MeshBasicMaterial()  // Ignore
 		];
 		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
 		scene.add( shadow );
@@ -201,27 +320,34 @@ function configureSlab() {
 
 	const materials = [
 		new THREE.MeshBasicMaterial( { map: textureRight, transparent: true, alphaTest: 0.9 } ),  // True Right
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+		new THREE.MeshBasicMaterial(),  // Ignore
 		new THREE.MeshBasicMaterial( { map: textureTop, transparent: true, alphaTest: 0.5 } ),   // True Top
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+		new THREE.MeshBasicMaterial(),// Ignore
 		new THREE.MeshBasicMaterial( { map: textureLeft, transparent: true, alphaTest: 0.5 } ),  // True Left
-		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+		new THREE.MeshBasicMaterial()   // Ignore
 	];
 
-	const geometry = new THREE.BoxGeometry( 1.25, 0.635, 1.25 );
+	const bounds = slabModel[0].localBounds;
+	const sizes = [
+		(bounds[3] - bounds[0]) / 12.8,
+		(bounds[4] - bounds[1]) / 12.59,
+		(bounds[5] - bounds[2]) / 12.8
+	];
+
+	const geometry = new THREE.BoxGeometry( ...sizes );
 	shape = new THREE.Mesh( geometry, materials );
 	scene.add( shape );
 
 
 	if (hasShadow) {
-		const shadowGeometry = new THREE.BoxGeometry( 1.25, 0.635, 1.25 );
+		const shadowGeometry = new THREE.BoxGeometry( ...sizes );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 }), // Ignore
+			new THREE.MeshBasicMaterial(), // Ignore
 			new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }), // Top Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 }), // Ignore
+			new THREE.MeshBasicMaterial(), // Ignore
 			new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
-			new THREE.MeshBasicMaterial({ color: 0x000000 })  // Ignore
+			new THREE.MeshBasicMaterial()  // Ignore
 		];
 		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
 		scene.add( shadow );
@@ -252,11 +378,11 @@ function configureStairs() {
 
 	const materials = [
 		new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),  // True Right
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+		new THREE.MeshBasicMaterial(),  // Ignore
 		new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),   // True Top
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+		new THREE.MeshBasicMaterial(),// Ignore
 		new THREE.MeshBasicMaterial( { map: textureLeft, transparent: true, alphaTest: 0.5 } ),  // True Left
-		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+		new THREE.MeshBasicMaterial()   // Ignore
 	];
 
 	const geometry = new THREE.BoxGeometry( 0.625, 0.635, 1.25 );
@@ -291,11 +417,11 @@ function configureStairs() {
 
 	const materials2 = [
 		new THREE.MeshBasicMaterial( { map: textureRight2, transparent: true, alphaTest: 0.5 } ),  // True Right
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+		new THREE.MeshBasicMaterial(),  // Ignore
 		new THREE.MeshBasicMaterial( { map: textureTop2, transparent: true, alphaTest: 0.5 } ),   // True Top
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+		new THREE.MeshBasicMaterial(),// Ignore
 		new THREE.MeshBasicMaterial( { map: textureLeft2, transparent: true, alphaTest: 0.5 } ),  // True Left
-		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+		new THREE.MeshBasicMaterial()   // Ignore
 	];
 	
 	shape2 = new THREE.Mesh( geometry, materials2 );
@@ -329,11 +455,11 @@ function configureStairs() {
 
 	const materials3 = [
 		new THREE.MeshBasicMaterial( { map: textureRight3, transparent: true, alphaTest: 0.5 } ),  // True Right
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+		new THREE.MeshBasicMaterial(),  // Ignore
 		new THREE.MeshBasicMaterial( { map: textureTop3, transparent: true, alphaTest: 0.5 } ),   // True Top
-		new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+		new THREE.MeshBasicMaterial(),// Ignore
 		new THREE.MeshBasicMaterial( { map: textureLeft3, transparent: true, alphaTest: 0.5 } ),  // True Left
-		new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+		new THREE.MeshBasicMaterial()   // Ignore
 	];
 	
 	shape3 = new THREE.Mesh( geometry, materials3 );
@@ -345,11 +471,11 @@ function configureStairs() {
 		const shadowGeometry = new THREE.BoxGeometry( 0.625, 0.635, 1.25 );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),  // True Right
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+			new THREE.MeshBasicMaterial(),  // Ignore
 			new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),   // True Top
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+			new THREE.MeshBasicMaterial(),// Ignore
 			new THREE.MeshBasicMaterial( { map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 } ),  // True Left
-			new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+			new THREE.MeshBasicMaterial()   // Ignore
 		];
 
 		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
@@ -358,11 +484,11 @@ function configureStairs() {
 		
 		const shadowMaterial2 = [
 			new THREE.MeshBasicMaterial( { map: textureRight2, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 } ),  // True Right
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+			new THREE.MeshBasicMaterial(),  // Ignore
 			new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),   // True Top
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+			new THREE.MeshBasicMaterial(),// Ignore
 			new THREE.MeshBasicMaterial( { map: textureLeft2, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 } ),  // True Left
-			new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+			new THREE.MeshBasicMaterial()   // Ignore
 		];
 
 		shadow2 = new THREE.Mesh( shadowGeometry, shadowMaterial2 );
@@ -371,11 +497,11 @@ function configureStairs() {
 		
 		const shadowMaterial3 = [
 			new THREE.MeshBasicMaterial( { map: textureRight3, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 } ),  // True Right
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),  // Ignore
+			new THREE.MeshBasicMaterial(),  // Ignore
 			new THREE.MeshBasicMaterial( { color: 0x000000, transparent: true, opacity: 0 } ),   // True Top
-			new THREE.MeshBasicMaterial( { color: 0x000000 } ),// Ignore
+			new THREE.MeshBasicMaterial(),// Ignore
 			new THREE.MeshBasicMaterial( { map: textureLeft3, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 } ),  // True Left
-			new THREE.MeshBasicMaterial( { color: 0x000000 } )   // Ignore
+			new THREE.MeshBasicMaterial()   // Ignore
 		];
 		shadow3 = new THREE.Mesh( shadowGeometry, shadowMaterial3 );
 		shadow3.position.set(0.3125, -0.3175, 0);
@@ -449,12 +575,12 @@ function downloadCompressed(image) {
 </script>
 
 <div style="width: fit-content;text-align:center;">
-	<h3>{isItem ? "Item Image" : "Top Image"}</h3>
+	<h3>{renderType == "Item" ? "Item Image" : "Top Image"}</h3>
 	<input type='file' id="topImage" style="display:none" on:change={() => updateImage('topImage')}>
 	<button id="topImageButton" onclick="document.getElementById('topImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
 	<img id="topImagePreview" alt="Preview of the top" onclick="document.getElementById('topImage').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
 </div>
-{#if !isItem}
+{#if renderType !== 'item'}
 <div style="display:flex;text-align:center;">
 	<div>
 		<h3 id="leftH3">{twoFaces ? "Left Image" : "Side Image"}</h3>
@@ -478,11 +604,40 @@ function downloadCompressed(image) {
 <br>
 <input type="checkbox" id="shadowBlock" bind:checked={hasShadow} on:change={updateCanvas}><label for="shadowBlock">Has Shadow</label>
 <br>
-<input type="checkbox" id="isSlab" bind:checked={isSlab} on:change={() => renderType('slab')}><label for="isSlab">Is Slab</label>
-<br>
-<input type="checkbox" id="isStair" bind:checked={isStair} on:change={() => renderType('stair')}><label for="isStair">Is Stair</label>
-<br>
-<input type="checkbox" id="isItem" bind:checked={isItem} on:change={() => renderType('item')}><label for="isItem">Is Item</label>
+{#each ["Cube","Slab", "Stair","Item","Json"] as types}
+	<label>
+		<input
+			type="radio"
+			name="renderTypes"
+			value={types}
+			checked={types === "Cube"}
+			on:change={() => {
+				renderType = types;
+				updateCanvas();
+			}}
+		/>
+
+		{types} 
+	</label>
+	<br>
+{/each}
+
+{#if renderType == "Json"}
+	<h3>Json Model</h3>
+	<input type="file" id="jsonModel" on:change={() => {
+		const [file] = document.getElementById('jsonModel').files
+		if (file) {
+			const reader = new FileReader();
+			reader.onload = function(e) {
+				customModel = JSON.parse(e.target.result);
+				console.log(customModel);
+				updateJson();
+			}
+			reader.readAsText(file);
+		}
+	}}>
+	<br>
+{/if}
 
 <h3>Block Renderer</h3>
 <div style="display: flex;flex-direction: column;width: fit-content;

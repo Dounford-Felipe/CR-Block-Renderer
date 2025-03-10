@@ -1,0 +1,72 @@
+{
+	"textures": 
+	{
+		"all":
+		{
+            "fileName": "base:textures/blocks/boombox_top.png"
+		},
+		"sign_front":
+		{
+            "fileName": "base:textures/blocks/sign_front.png"
+		}
+	},
+	"cuboids": 
+	[
+		{
+			"localBounds": [0,0,0,1,16,16],
+			"faces": 
+			{
+                "localNegX": {"uv": [ 0, 0, 16, 16 ], "ambientocclusion": true, "cullFace": true, "texture": "side"},
+                "localPosX": {"uv": [ 0, 0, 16, 16 ], "ambientocclusion": true, "cullFace": false, "texture": "sign_front"},
+
+                "localNegY": {"uv": [ 0, 15, 16, 16 ], "uvRotation": 90,  "ambientocclusion": true, "cullFace": true, "texture": "bottom"},
+                "localPosY": {"uv": [ 0, 0, 16, 1 ], "uvRotation": 270, "ambientocclusion": true, "cullFace": true, "texture": "top"},
+
+                "localNegZ": {"uv": [ 15, 0, 16, 16 ], "ambientocclusion": true, "cullFace": true, "texture": "side"},
+                "localPosZ": {"uv": [ 0, 0, 1, 16 ], "ambientocclusion": true, "cullFace": true, "texture": "side"}
+			}
+		}, 
+		{
+			"localBounds": [1,0,0,2,1,16],
+			"faces": {
+                "localPosX": {"uv": [ 0, 15, 16, 16 ], "ambientocclusion": false, "cullFace": false, "texture": "side"},
+
+                "localNegY": {"uv": [ 0, 15, 16, 16 ], "uvRotation": 90,  "ambientocclusion": false, "cullFace": true, "texture": "bottom"},
+                "localPosY": {"uv": [ 0, 0, 16, 1 ], "uvRotation": 270, "ambientocclusion": false, "cullFace": false, "texture": "top"},
+
+                "localNegZ": {"uv": [ 15, 15, 16, 16 ], "ambientocclusion": false, "cullFace": true, "texture": "side"},
+                "localPosZ": {"uv": [ 0, 15, 1, 16 ], "ambientocclusion": false, "cullFace": true, "texture": "side"}
+			}
+		},
+		{
+			"localBounds": [1,15,0,2,16,16],
+			"faces": {
+                "localPosX": {"uv": [ 0, 0, 16, 1 ], "ambientocclusion": false, "cullFace": false, "texture": "side"},
+
+                "localNegY": {"uv": [ 0, 15, 16, 16 ], "uvRotation": 90, "ambientocclusion": false, "cullFace": false, "texture": "bottom"},
+                "localPosY": {"uv": [ 0, 0, 16, 1 ], "uvRotation": 270, "ambientocclusion": false, "cullFace": true, "texture": "top"},
+
+                "localNegZ": {"uv": [ 15, 0, 16, 0 ], "ambientocclusion": false, "cullFace": true, "texture": "side"},
+                "localPosZ": {"uv": [ 0, 0, 1, 1 ], "ambientocclusion": false, "cullFace": true, "texture": "side"}
+			}
+		}, 
+		{
+			"localBounds": [1,1,0,2,15,1],
+			"faces": {
+                "localPosX": {"uv": [ 0, 1, 1, 15 ], "ambientocclusion": false, "cullFace": false, "texture": "side"},
+
+                "localNegZ": {"uv": [ 15, 1, 16, 15 ], "ambientocclusion": false, "cullFace": false, "texture": "side"},
+                "localPosZ": {"uv": [ 0, 1, 1, 15 ], "ambientocclusion": false, "cullFace": true, "texture": "side"}
+			}
+		}, 
+		{
+			"localBounds": [1,1,15,2,15,16],
+			"faces": {
+                "localPosX": {"uv": [ 15, 1, 16, 15 ], "ambientocclusion": false, "cullFace": false, "texture": "side"},
+
+                "localNegZ": {"uv": [ 15, 1, 16, 15 ], "ambientocclusion": false, "cullFace": true, "texture": "side"},
+                "localPosZ": {"uv": [ 0, 1, 1, 15 ], "ambientocclusion": false, "cullFace": false, "texture": "side"}
+			}
+		}
+	]
+}
