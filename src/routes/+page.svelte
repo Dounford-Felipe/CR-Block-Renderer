@@ -39,16 +39,10 @@ let images = {};
 let twoFaces = false;
 let hasImage = false;
 let hasShadow = true;
-let renderType = 'Cube';
+let renderType = 'Json';
 let scene = {}
 let camera = {position: {x: 0, y: 0, z: 0}}
 let renderer = {}
-let shape;
-let shape2 = {rotation: {x: 0, y: 0, z: 0}};
-let shape3;
-let shadow;
-let shadow2;
-let shadow3;
 let customModel = {
 	"textures": {
 		"torch": {
@@ -80,7 +74,6 @@ let customModel = {
 };
 let customImages = {};
 let shapes = [];
-let shadows = [];
 
 $: camera.position.z = camera.position.x
 
@@ -106,6 +99,7 @@ const updateImage = (image) => {
 }
 
 const updateCanvas = () => {
+	removeOld();
 	if (renderType == 'Json') {
 		if (Object.keys(customImages).length !== 0 && Object.keys(customImages).every(key => customImages[key].src !== "")) {
 			configureJson();
@@ -146,31 +140,24 @@ const updateJson = () => {
 
 const removeOld = () => {
 	shapes.forEach(shape => scene.remove(shape));
-    shadows.forEach(shadow => scene.remove(shadow));
-    shadows = [];
 	shapes = [];
-	if (shape) {
-        scene.remove(shape);
-        scene.remove(shape2);
-        scene.remove(shape3);
-        scene.remove(shadow2);
-        scene.remove(shadow3);
-        scene.remove(shadow);
-		shape2.rotation.y = 0;
-		shadow.rotation.y = 0;
-    }
 }
 
 onMount(() => {
 	images.left = new Image();
 	images.right = new Image();
 	images.top = new Image();
+	customImages.torch = new Image();
 	images.left.src = "grass_side.png";
 	images.right.src = "grass_side.png";
 	images.top.src = "magma.png";
-	initThree()
-	renderer.setAnimationLoop( drawLoop );
-	configureCube();
+	customImages.torch.src = "torch.png";
+	customImages.torch.onload = function(){
+		initThree()
+		renderer.setAnimationLoop( drawLoop );
+		configureJson();
+	}
+	
 })
 
 function initThree() {
@@ -193,7 +180,75 @@ function initThree() {
 }
 
 function configureJson() {
-	removeOld();
+    customModel.cuboids.forEach(cuboid => {
+        const [x1, y1, z1, x2, y2, z2] = cuboid.localBounds;
+        const width = x2 - x1;
+        const height = y2 - y1;
+        const depth = z2 - z1;
+
+        if (!customImages["torch"]) {
+            console.error("Textura não carregada");
+            return;
+        }
+
+        const texture = new THREE.Texture(customImages["torch"]);
+        texture.needsUpdate = true;
+        texture.magFilter = THREE.NearestFilter; // Garante que os pixels fiquem nítidos
+        texture.minFilter = THREE.NearestFilter;
+
+        const geometry = new THREE.BoxGeometry(width, height, depth);
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+
+        // Corrigindo UVs
+        const textureWidth = 16;
+        const textureHeight = 16;
+        const uvArray = geometry.attributes.uv.array;
+
+        const facesMap = [
+            "localPosY", "localNegY", "localNegZ",
+            "localPosZ", "localPosX", "localNegX",
+        ];
+
+        facesMap.forEach((faceKey, i) => {
+            if (!cuboid.faces[faceKey]) return;
+
+            let { uv } = cuboid.faces[faceKey];
+
+            // Normalizando os UVs corretamente
+            uv = [
+                uv[0] / textureWidth, 1 - uv[1] / textureHeight,
+                uv[2] / textureWidth, 1 - uv[1] / textureHeight,
+                uv[2] / textureWidth, 1 - uv[3] / textureHeight,
+                uv[0] / textureWidth, 1 - uv[3] / textureHeight
+            ];
+
+            // Ajustando no array
+            let idx = i * 8;
+            for (let j = 0; j < 8; j++) {
+                uvArray[idx + j] = uv[j];
+            }
+        });
+
+        geometry.attributes.uv.needsUpdate = true;
+
+        // Criando o cuboid
+        const shape = new THREE.Mesh(geometry, material);
+        shape.position.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
+
+        shapes.push(shape);
+    });
+
+    shapes.forEach((shape) => {
+        scene.add(shape);
+    });
+
+    renderer.render(scene, camera);
+    hasImage = true;
+}
+
+
+
+function configureJsono() {
 	customModel.cuboids.forEach((cuboid,index) => {
 		if(index == 0) {return;}
 		const textureLeft = textureLoader.load(images['left'].src);
@@ -253,7 +308,6 @@ function configureJson() {
 }
 
 function configureCube() {
-	removeOld();
 	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
 	textureLeft.colorSpace = THREE.SRGBColorSpace;
@@ -283,12 +337,9 @@ function configureCube() {
 	];
 
 	const geometry = new THREE.BoxGeometry( 1.25, 1.27, 1.25 );
-	shape = new THREE.Mesh( geometry, materials );
-	scene.add( shape );
-
+	shapes.push(new THREE.Mesh( geometry, materials ))
 
 	if (hasShadow) {
-		const shadowGeometry = new THREE.BoxGeometry( 1.25, 1.27, 1.25 );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
 			new THREE.MeshBasicMaterial(), // Ignore
@@ -297,17 +348,15 @@ function configureCube() {
 			new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
 			new THREE.MeshBasicMaterial()  // Ignore
 		];
-		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
-		scene.add( shadow );
+		shapes.push(new THREE.Mesh( geometry, shadowMaterial ));
 	}
-
+	shapes.forEach(shape => scene.add(shape));
 
 	renderer.render(scene, camera);
 	hasImage = true;
 }
 
 function configureSlab() {
-	removeOld();
 
 	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
@@ -349,12 +398,10 @@ function configureSlab() {
 	];
 
 	const geometry = new THREE.BoxGeometry( ...sizes );
-	shape = new THREE.Mesh( geometry, materials );
-	scene.add( shape );
+	shapes.push(new THREE.Mesh( geometry, materials ));
 
 
 	if (hasShadow) {
-		const shadowGeometry = new THREE.BoxGeometry( ...sizes );
 		const shadowMaterial = [
 			new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
 			new THREE.MeshBasicMaterial(), // Ignore
@@ -363,17 +410,17 @@ function configureSlab() {
 			new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
 			new THREE.MeshBasicMaterial()  // Ignore
 		];
-		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
-		scene.add( shadow );
+		shapes.push(new THREE.Mesh( geometry, shadowMaterial ))
+
 	}
 
+	shapes.forEach(shape => scene.add(shape));
 
 	renderer.render(scene, camera);
 	hasImage = true;
 }
 
 function configureStairs() {
-	removeOld();
 
 	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
@@ -400,9 +447,9 @@ function configureStairs() {
 	];
 
 	const geometry = new THREE.BoxGeometry( 0.625, 0.635, 1.25 );
-	shape = new THREE.Mesh( geometry, materials );
+	let shape = new THREE.Mesh( geometry, materials );
 	shape.position.set(-0.3125, -0.3175, 0);
-	scene.add( shape );
+	shapes.push(shape);
 	
 	const textureLeft2 = textureLoader.load(images['left'].src);
 	textureLeft2.magFilter = THREE.NearestFilter;
@@ -438,9 +485,9 @@ function configureStairs() {
 		new THREE.MeshBasicMaterial()   // Ignore
 	];
 	
-	shape2 = new THREE.Mesh( geometry, materials2 );
-	shape2.position.set(-0.3125, 0.3175, 0);
-	scene.add( shape2 );
+	shape = new THREE.Mesh( geometry, materials2 );
+	shape.position.set(-0.3125, 0.3175, 0);
+	shapes.push(shape);
 
 	const textureLeft3 = textureLoader.load(images['left'].src);
 	textureLeft3.magFilter = THREE.NearestFilter;
@@ -476,9 +523,9 @@ function configureStairs() {
 		new THREE.MeshBasicMaterial()   // Ignore
 	];
 	
-	shape3 = new THREE.Mesh( geometry, materials3 );
-	shape3.position.set(0.3125, -0.3175, 0);
-	scene.add( shape3 );
+	shape = new THREE.Mesh( geometry, materials3 );
+	shape.position.set(0.3125, -0.3175, 0);
+	shapes.push(shape);
 
 
 	if (hasShadow) {
@@ -492,9 +539,9 @@ function configureStairs() {
 			new THREE.MeshBasicMaterial()   // Ignore
 		];
 
-		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
-		shadow.position.set(-0.3125, -0.3175, 0);
-		scene.add( shadow );
+		shape = new THREE.Mesh( shadowGeometry, shadowMaterial );
+		shape.position.set(-0.3125, -0.3175, 0);
+		shapes.push(shape);
 		
 		const shadowMaterial2 = [
 			new THREE.MeshBasicMaterial( { map: textureRight2, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 } ),  // True Right
@@ -505,9 +552,9 @@ function configureStairs() {
 			new THREE.MeshBasicMaterial()   // Ignore
 		];
 
-		shadow2 = new THREE.Mesh( shadowGeometry, shadowMaterial2 );
-		shadow2.position.set(-0.3125, 0.3175, 0);
-		scene.add( shadow2 );
+		shape = new THREE.Mesh( shadowGeometry, shadowMaterial2 );
+		shape.position.set(-0.3125, 0.3175, 0);
+		shapes.push(shape);
 		
 		const shadowMaterial3 = [
 			new THREE.MeshBasicMaterial( { map: textureRight3, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 } ),  // True Right
@@ -517,18 +564,18 @@ function configureStairs() {
 			new THREE.MeshBasicMaterial( { map: textureLeft3, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 } ),  // True Left
 			new THREE.MeshBasicMaterial()   // Ignore
 		];
-		shadow3 = new THREE.Mesh( shadowGeometry, shadowMaterial3 );
-		shadow3.position.set(0.3125, -0.3175, 0);
-		scene.add( shadow3 );
+		shape = new THREE.Mesh( shadowGeometry, shadowMaterial3 );
+		shape.position.set(0.3125, -0.3175, 0);
+		shapes.push(shape);
 	}
 
+	shapes.forEach(shape => scene.add(shape));
 
 	renderer.render(scene, camera);
 	hasImage = true;
 }
 
 function configureItem() {
-	removeOld();
 	const texture = textureLoader.load(images['top'].src);
 	texture.magFilter = THREE.NearestFilter;
 	texture.colorSpace = THREE.SRGBColorSpace;
@@ -536,20 +583,20 @@ function configureItem() {
 	const material = new THREE.MeshBasicMaterial( { map: texture, transparent: true, alphaTest: 0.9 } )
 
 	const geometry = new THREE.PlaneGeometry( 2, 2 );
-	shape = new THREE.Mesh( geometry, material );
-	scene.add( shape );
+	let shape = new THREE.Mesh( geometry, material );
+	shapes.push(shape);
 
-	shape2 = new THREE.Mesh( geometry, material );
-	shape2.rotation.y = 1
-	scene.add( shape2 );
+	shape = new THREE.Mesh( geometry, material );
+	shape.rotation.y = 1
+	shapes.push(shape);
 
 	if (hasShadow) {
-		const shadowGeometry = new THREE.PlaneGeometry( 2, 2 );
 		const shadowMaterial = new THREE.MeshBasicMaterial({ map: texture, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 });
-		shadow = new THREE.Mesh( shadowGeometry, shadowMaterial );
-		shadow.rotation.y = 1
-		scene.add( shadow );
+		shape = new THREE.Mesh( geometry, shadowMaterial );
+		shapes.push(shape);
 	}
+	
+	shapes.forEach(shape => scene.add(shape));
 
 	renderer.render(scene, camera);
 	hasImage = true;
