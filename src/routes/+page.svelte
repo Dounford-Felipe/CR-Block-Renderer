@@ -39,7 +39,7 @@ let images = {};
 let twoFaces = false;
 let hasImage = false;
 let hasShadow = true;
-let renderType = 'Json';
+let renderType = 'Cube';
 let scene = {}
 let camera = {position: {x: 0, y: 0, z: 0}}
 let renderer = {}
@@ -147,16 +147,13 @@ onMount(() => {
 	images.left = new Image();
 	images.right = new Image();
 	images.top = new Image();
-	customImages.torch = new Image();
+	//customImages.torch = new Image();
 	images.left.src = "grass_side.png";
 	images.right.src = "grass_side.png";
 	images.top.src = "magma.png";
-	customImages.torch.src = "torch.png";
-	customImages.torch.onload = function(){
-		initThree()
-		renderer.setAnimationLoop( drawLoop );
-		configureJson();
-	}
+	//customImages.torch.src = "torch.png";
+	initThree()
+	renderer.setAnimationLoop( drawLoop );
 	
 })
 
@@ -180,104 +177,13 @@ function initThree() {
 }
 
 function configureJson() {
-    customModel.cuboids.forEach(cuboid => {
-        const [x1, y1, z1, x2, y2, z2] = cuboid.localBounds;
-        const width = x2 - x1;
-        const height = y2 - y1;
-        const depth = z2 - z1;
-
-        if (!customImages["torch"]) {
-            console.error("Textura não carregada");
-            return;
-        }
-
-        const texture = new THREE.Texture(customImages["torch"]);
-        texture.needsUpdate = true;
-        texture.magFilter = THREE.NearestFilter; // Garante que os pixels fiquem nítidos
-        texture.minFilter = THREE.NearestFilter;
-
-        const geometry = new THREE.BoxGeometry(width, height, depth);
-        const material = new THREE.MeshBasicMaterial({ map: texture });
-
-        // Corrigindo UVs
-        const textureWidth = 16;
-        const textureHeight = 16;
-        const uvArray = geometry.attributes.uv.array;
-
-        const facesMap = [
-            "localPosY", "localNegY", "localNegZ",
-            "localPosZ", "localPosX", "localNegX",
-        ];
-
-        facesMap.forEach((faceKey, i) => {
-            if (!cuboid.faces[faceKey]) return;
-
-            let { uv } = cuboid.faces[faceKey];
-
-            // Normalizando os UVs corretamente
-            uv = [
-                uv[0] / textureWidth, 1 - uv[1] / textureHeight,
-                uv[2] / textureWidth, 1 - uv[1] / textureHeight,
-                uv[2] / textureWidth, 1 - uv[3] / textureHeight,
-                uv[0] / textureWidth, 1 - uv[3] / textureHeight
-            ];
-
-            // Ajustando no array
-            let idx = i * 8;
-            for (let j = 0; j < 8; j++) {
-                uvArray[idx + j] = uv[j];
-            }
-        });
-
-        geometry.attributes.uv.needsUpdate = true;
-
-        // Criando o cuboid
-        const shape = new THREE.Mesh(geometry, material);
-        shape.position.set((x1 + x2) / 2, (y1 + y2) / 2, (z1 + z2) / 2);
-
-        shapes.push(shape);
-    });
-
-    shapes.forEach((shape) => {
-        scene.add(shape);
-    });
-
-    renderer.render(scene, camera);
-    hasImage = true;
-}
-
-
-
-function configureJsono() {
-	customModel.cuboids.forEach((cuboid,index) => {
-		if(index == 0) {return;}
-		const textureLeft = textureLoader.load(images['left'].src);
-		textureLeft.magFilter = THREE.NearestFilter;
-		textureLeft.colorSpace = THREE.SRGBColorSpace;
-
-		let textureRight;
-		if (twoFaces) {
-			textureRight = textureLoader.load(images['right'].src);
-		} else {
-			textureRight = textureLoader.load(images['left'].src);
-		}
-		textureRight.magFilter = THREE.NearestFilter;
-		textureRight.colorSpace = THREE.SRGBColorSpace;
-
-		const textureTop = textureLoader.load(images['top'].src);
-		textureTop.magFilter = THREE.NearestFilter;
-		textureTop.colorSpace = THREE.SRGBColorSpace;
-		textureTop.rotation = Math.PI / 2;
-		textureTop.center.set(0.5, 0.5);
-
-		const materials = [
-			new THREE.MeshBasicMaterial( { map: textureRight, transparent: true, alphaTest: 0.9 } ),  // True Right
-			new THREE.MeshBasicMaterial(),  // Ignore
-			new THREE.MeshBasicMaterial( { map: textureTop, transparent: true, alphaTest: 0.5 } ),   // True Top
-			new THREE.MeshBasicMaterial(),// Ignore
-			new THREE.MeshBasicMaterial( { map: textureLeft, transparent: true, alphaTest: 0.5 } ),  // True Left
-			new THREE.MeshBasicMaterial()   // Ignore
-		];
+	customModel.cuboids.forEach((cuboid) => {
+		const materials = [];
+		Object.values(cuboid.faces).forEach(face => {
+			const texture = textureLoader.load(customImages[face.texture].src);
+			const material = new THREE.MeshBasicMaterial({ map: texture });
+			materials.push(material);
+		});
 
 		const bounds = cuboid.localBounds;
 		const sizes = [
@@ -287,19 +193,63 @@ function configureJsono() {
 		];
 
 		const geometry = new THREE.BoxGeometry( ...sizes );
+
+		const uvAttribute = geometry.getAttribute('uv');
+		const uvs = uvAttribute.array;
+
+		const faceMapping = {
+			localPosY: 2, // Top
+			localNegY: 3, // Bottom
+			localPosZ: 4, // Front
+			localNegZ: 5, // Back
+			localPosX: 0, // Right
+			localNegX: 1  // Left
+		};
+
+		const facesData  = {};
+		Object.keys(cuboid.faces).forEach(face => {
+			const uv = cuboid.faces[face].uv;
+			uvs[face] = {
+				uv: [
+					uv[0] / 16, uv[1] / 16, uv[2] / 16, uv[3] / 16
+				]
+			}
+		});
+
+		for (const [faceName, faceData] of Object.entries(facesData)) {
+			const threeFaceIndex = faceMapping[faceName];
+			const uvPixels = faceData.uv;
+
+			// Converte pixels para UVs normalizados (0-1) e inverte V
+			const u0 = uvPixels[0];
+			const v0 = (16 - uvPixels[1]);
+			const u1 = uvPixels[2];
+			const v1 = (16 - uvPixels[3]);
+
+			// Define os 4 cantos da textura
+			const bl = [u0, v1]; // Canto inferior esquerdo
+			const br = [u1, v1]; // Canto inferior direito
+			const tr = [u1, v0]; // Canto superior direito
+			const tl = [u0, v0]; // Canto superior esquerdo
+
+			// Ordem dos vértices no Three.js (6 por face)
+			const faceUvs = [
+				...bl, ...br, ...tr, // Primeiro triângulo
+				...tr, ...tl, ...bl  // Segundo triângulo
+			];
+
+			// Atualiza os UVs na geometria
+			const startIndex = threeFaceIndex * 12; // 12 elementos por face
+			for (let i = 0; i < 12; i++) {
+				uvs[startIndex + i] = faceUvs[i];
+			}
+		}
+
+		uvAttribute.needsUpdate = true;
+
+				
 		shapes.push(new THREE.Mesh( geometry, materials ));
 
-		if (hasShadow) {
-			const shadowMaterial = [
-				new THREE.MeshBasicMaterial({ map: textureRight, color: 0x000000, transparent: true, opacity: 0.3, alphaTest: 0 }), // Right Side Shadow
-				new THREE.MeshBasicMaterial(), // Ignore
-				new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }), // Top Side Shadow
-				new THREE.MeshBasicMaterial(), // Ignore
-				new THREE.MeshBasicMaterial({ map: textureLeft, color: 0x000000, transparent: true, opacity: 0.1, alphaTest: 0 }), // Left Side Shadow
-				new THREE.MeshBasicMaterial()  // Ignore
-			];
-			shapes.push(new THREE.Mesh( geometry, shadowMaterial ));
-		}
 		});
 
 	shapes.forEach(shape => scene.add(shape));
