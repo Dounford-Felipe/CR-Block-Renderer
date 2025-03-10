@@ -78,6 +78,7 @@ let customModel = {
 			}
 		}]
 };
+let customImages = {};
 let shapes = [];
 let shadows = [];
 
@@ -88,34 +89,43 @@ const updateImage = (image) => {
 	const [file] = document.getElementById(image).files
 	if (file) {
 		document.getElementById(image + 'Preview').src = URL.createObjectURL(file);
-		images[image].src = URL.createObjectURL(file);
 		document.getElementById(image + 'Preview').style.display = "";
 		document.getElementById(image + 'Button').style.display = "none";
-		images[image].onload = function(){
-			updateCanvas();
+		if (renderType == 'Json') {
+			customImages[image].src = URL.createObjectURL(file);
+			customImages[image].onload = function(){
+				updateCanvas();
+			}
+		} else {
+			images[image].src = URL.createObjectURL(file);
+			images[image].onload = function(){
+				updateCanvas();
+			}
 		}
 	}	
 }
 
 const updateCanvas = () => {
-	if (renderType == 'Item') {
-		if (images['topImage'].src !== "") {
+	if (renderType == 'Json') {
+		if (Object.keys(customImages).length !== 0 && Object.keys(customImages).every(key => customImages[key].src !== "")) {
+			configureJson();
+		} else {
+			updateJson();
+		}
+	} else if (renderType == 'Item') {
+		if (images['top'].src !== "") {
 			configureItem();
 		}
 	} else {
-		const hasImages = images['leftImage'].src !== "" && images['topImage'].src !== "";
-		const hasRightImage = images['rightImage'].src !== "" || twoFaces == false;
-		const hasCustomModel = customModel !== null || renderType !== 'Json';
-		if (hasImages && hasRightImage && hasCustomModel) {
+		const hasImages = images['left'].src !== "" && images['top'].src !== "";
+		const hasRightImage = images['right'].src !== "" || twoFaces == false;
+		if (hasImages && hasRightImage) {
 			switch (renderType) {
 				case 'Slab':
 					configureSlab();
 					break;
 				case 'Stair':
 					configureStairs();
-					break;
-				case 'Json':
-					configureJson();
 					break;
 				default:
 					configureCube();
@@ -129,12 +139,16 @@ const updateJson = () => {
 	if (customModel.parent == "base:models/blocks/cube.json") {
 		customModel.cuboids = cubeModel;
 	};
-	configureJson();
+	Object.keys(customModel.textures).forEach(key => {
+		//customModel.textures[key].fileName = images[key].src;
+	});
 }
 
 const removeOld = () => {
 	shapes.forEach(shape => scene.remove(shape));
-	shadows.forEach(shadow => scene.remove(shadow));
+    shadows.forEach(shadow => scene.remove(shadow));
+    shadows = [];
+	shapes = [];
 	if (shape) {
         scene.remove(shape);
         scene.remove(shape2);
@@ -148,15 +162,15 @@ const removeOld = () => {
 }
 
 onMount(() => {
-	images.leftImage = new Image();
-	images.rightImage = new Image();
-	images.topImage = new Image();
-	images.leftImage.src = "grass_side.png";
-	images.rightImage.src = "grass_side.png";
-	images.topImage.src = "magma.png";
+	images.left = new Image();
+	images.right = new Image();
+	images.top = new Image();
+	images.left.src = "grass_side.png";
+	images.right.src = "grass_side.png";
+	images.top.src = "magma.png";
 	initThree()
 	renderer.setAnimationLoop( drawLoop );
-	configureJson();
+	configureCube();
 })
 
 function initThree() {
@@ -182,20 +196,20 @@ function configureJson() {
 	removeOld();
 	customModel.cuboids.forEach((cuboid,index) => {
 		if(index == 0) {return;}
-		const textureLeft = textureLoader.load(images['leftImage'].src);
+		const textureLeft = textureLoader.load(images['left'].src);
 		textureLeft.magFilter = THREE.NearestFilter;
 		textureLeft.colorSpace = THREE.SRGBColorSpace;
 
 		let textureRight;
 		if (twoFaces) {
-			textureRight = textureLoader.load(images['rightImage'].src);
+			textureRight = textureLoader.load(images['right'].src);
 		} else {
-			textureRight = textureLoader.load(images['leftImage'].src);
+			textureRight = textureLoader.load(images['left'].src);
 		}
 		textureRight.magFilter = THREE.NearestFilter;
 		textureRight.colorSpace = THREE.SRGBColorSpace;
 
-		const textureTop = textureLoader.load(images['topImage'].src);
+		const textureTop = textureLoader.load(images['top'].src);
 		textureTop.magFilter = THREE.NearestFilter;
 		textureTop.colorSpace = THREE.SRGBColorSpace;
 		textureTop.rotation = Math.PI / 2;
@@ -240,20 +254,20 @@ function configureJson() {
 
 function configureCube() {
 	removeOld();
-	const textureLeft = textureLoader.load(images['leftImage'].src);
+	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
 	textureLeft.colorSpace = THREE.SRGBColorSpace;
 
 	let textureRight;
 	if (twoFaces) {
-		textureRight = textureLoader.load(images['rightImage'].src);
+		textureRight = textureLoader.load(images['right'].src);
 	} else {
-		textureRight = textureLoader.load(images['leftImage'].src);
+		textureRight = textureLoader.load(images['left'].src);
 	}
 	textureRight.magFilter = THREE.NearestFilter;
 	textureRight.colorSpace = THREE.SRGBColorSpace;
 
-	const textureTop = textureLoader.load(images['topImage'].src);
+	const textureTop = textureLoader.load(images['top'].src);
 	textureTop.magFilter = THREE.NearestFilter;
 	textureTop.colorSpace = THREE.SRGBColorSpace;
 	textureTop.rotation = Math.PI / 2;
@@ -295,7 +309,7 @@ function configureCube() {
 function configureSlab() {
 	removeOld();
 
-	const textureLeft = textureLoader.load(images['leftImage'].src);
+	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
 	textureLeft.colorSpace = THREE.SRGBColorSpace;
 	textureLeft.repeat.set(1, 0.5);
@@ -303,16 +317,16 @@ function configureSlab() {
 
 	let textureRight;
 	if (twoFaces) {
-		textureRight = textureLoader.load(images['rightImage'].src);
+		textureRight = textureLoader.load(images['right'].src);
 	} else {
-		textureRight = textureLoader.load(images['leftImage'].src);
+		textureRight = textureLoader.load(images['left'].src);
 	}
 	textureRight.magFilter = THREE.NearestFilter;
 	textureRight.colorSpace = THREE.SRGBColorSpace;
 	textureRight.repeat.set(1, 0.5);
 	textureRight.offset.set(0, 0.5);
 
-	const textureTop = textureLoader.load(images['topImage'].src);
+	const textureTop = textureLoader.load(images['top'].src);
 	textureTop.magFilter = THREE.NearestFilter;
 	textureTop.colorSpace = THREE.SRGBColorSpace;
 	textureTop.rotation = Math.PI / 2;
@@ -361,16 +375,16 @@ function configureSlab() {
 function configureStairs() {
 	removeOld();
 
-	const textureLeft = textureLoader.load(images['leftImage'].src);
+	const textureLeft = textureLoader.load(images['left'].src);
 	textureLeft.magFilter = THREE.NearestFilter;
 	textureLeft.colorSpace = THREE.SRGBColorSpace;
 	textureLeft.repeat.set(0.5, 0.5);
 
 	let textureRight;
 	if (twoFaces) {
-		textureRight = textureLoader.load(images['rightImage'].src);
+		textureRight = textureLoader.load(images['right'].src);
 	} else {
-		textureRight = textureLoader.load(images['leftImage'].src);
+		textureRight = textureLoader.load(images['left'].src);
 	}
 	textureRight.magFilter = THREE.NearestFilter;
 	textureRight.colorSpace = THREE.SRGBColorSpace;
@@ -390,7 +404,7 @@ function configureStairs() {
 	shape.position.set(-0.3125, -0.3175, 0);
 	scene.add( shape );
 	
-	const textureLeft2 = textureLoader.load(images['leftImage'].src);
+	const textureLeft2 = textureLoader.load(images['left'].src);
 	textureLeft2.magFilter = THREE.NearestFilter;
 	textureLeft2.colorSpace = THREE.SRGBColorSpace;
 	textureLeft2.repeat.set(0.5, 0.5);
@@ -398,16 +412,16 @@ function configureStairs() {
 
 	let textureRight2;
 	if (twoFaces) {
-		textureRight2 = textureLoader.load(images['rightImage'].src);
+		textureRight2 = textureLoader.load(images['right'].src);
 	} else {
-		textureRight2 = textureLoader.load(images['leftImage'].src);
+		textureRight2 = textureLoader.load(images['left'].src);
 	}
 	textureRight2.magFilter = THREE.NearestFilter;
 	textureRight2.colorSpace = THREE.SRGBColorSpace;
 	textureRight2.repeat.set(1, 0.5);
 	textureRight2.offset.set(0, 0.5);
 
-	const textureTop2 = textureLoader.load(images['topImage'].src);
+	const textureTop2 = textureLoader.load(images['top'].src);
 	textureTop2.magFilter = THREE.NearestFilter;
 	textureTop2.colorSpace = THREE.SRGBColorSpace;
 	textureTop2.repeat.set(1, 0.5);
@@ -428,7 +442,7 @@ function configureStairs() {
 	shape2.position.set(-0.3125, 0.3175, 0);
 	scene.add( shape2 );
 
-	const textureLeft3 = textureLoader.load(images['leftImage'].src);
+	const textureLeft3 = textureLoader.load(images['left'].src);
 	textureLeft3.magFilter = THREE.NearestFilter;
 	textureLeft3.colorSpace = THREE.SRGBColorSpace;
 	textureLeft3.repeat.set(0.5, 0.5);
@@ -436,16 +450,16 @@ function configureStairs() {
 
 	let textureRight3;
 	if (twoFaces) {
-		textureRight3 = textureLoader.load(images['rightImage'].src);
+		textureRight3 = textureLoader.load(images['right'].src);
 	} else {
-		textureRight3 = textureLoader.load(images['leftImage'].src);
+		textureRight3 = textureLoader.load(images['left'].src);
 	}
 	textureRight3.magFilter = THREE.NearestFilter;
 	textureRight3.colorSpace = THREE.SRGBColorSpace;
 	textureRight3.repeat.set(1, 0.5);
 	textureRight3.offset.set(0, 0);
 
-	const textureTop3 = textureLoader.load(images['topImage'].src);
+	const textureTop3 = textureLoader.load(images['top'].src);
 	textureTop3.magFilter = THREE.NearestFilter;
 	textureTop3.colorSpace = THREE.SRGBColorSpace;
 	textureTop3.repeat.set(1, 0.5);
@@ -515,7 +529,7 @@ function configureStairs() {
 
 function configureItem() {
 	removeOld();
-	const texture = textureLoader.load(images['topImage'].src);
+	const texture = textureLoader.load(images['top'].src);
 	texture.magFilter = THREE.NearestFilter;
 	texture.colorSpace = THREE.SRGBColorSpace;
 
@@ -574,26 +588,38 @@ function downloadCompressed(image) {
 
 </script>
 
+{#if renderType == "Json"}
+<div id="customImagesDiv">
+	{#each Object.keys(customImages) as image}
+		<div style="width: fit-content;text-align:center;">
+			<h3>{image} Image</h3>
+			<input type='file' id="{image}" style="display:none" on:change={() => updateImage(image)}>
+			<button id="{image}Button" onclick="document.getElementById('{image}').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
+			<img id="{image}Preview" alt="Preview of the {image}" onclick="document.getElementById('{image}').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
+		</div>
+	{/each}
+</div>
+{:else}
 <div style="width: fit-content;text-align:center;">
 	<h3>{renderType == "Item" ? "Item Image" : "Top Image"}</h3>
-	<input type='file' id="topImage" style="display:none" on:change={() => updateImage('topImage')}>
-	<button id="topImageButton" onclick="document.getElementById('topImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
-	<img id="topImagePreview" alt="Preview of the top" onclick="document.getElementById('topImage').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
+	<input type='file' id="top" style="display:none" on:change={() => updateImage('top')}>
+	<button id="topButton" onclick="document.getElementById('top').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
+	<img id="topPreview" alt="Preview of the top" onclick="document.getElementById('top').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
 </div>
-{#if renderType !== 'item'}
+{#if renderType !== 'Item'}
 <div style="display:flex;text-align:center;">
 	<div>
 		<h3 id="leftH3">{twoFaces ? "Left Image" : "Side Image"}</h3>
-		<input type='file' id="leftImage" style="display:none" on:change={() => updateImage('leftImage')}>
-		<button id="leftImageButton" onclick="document.getElementById('leftImage').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
-		<img id="leftImagePreview" alt="Preview of the left" onclick="document.getElementById('leftImage').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
+		<input type='file' id="left" style="display:none" on:change={() => updateImage('left')}>
+		<button id="leftButton" onclick="document.getElementById('left').click()" style="padding: 0;height: fit-content;"><i class='bx bx-image-add bx-md'></i></button>
+		<img id="leftPreview" alt="Preview of the left" onclick="document.getElementById('left').click()" src="" style="display:none;width: 50px;image-rendering: pixelated;">
 	</div>
 	{#if twoFaces}
 		<div id="rightDiv">
 			<h3>Right Image</h3>
-			<input type='file' id="rightImage" style="display:none" on:change={() => updateImage('rightImage')}>
-			<img id="rightImagePreview" alt="Preview of the right" onclick="document.getElementById('rightImage').click()" src="{images['rightImage'].src ? images['rightImage'].src : ''}" style="width: 50px;image-rendering: pixelated;display:{images['rightImage'].src ? '' : 'none'}">
-			<button id="rightImageButton" onclick="document.getElementById('rightImage').click()" style="padding: 0;height: fit-content;display:{images['rightImage'].src ? 'none' : ''}">
+			<input type='file' id="right" style="display:none" on:change={() => updateImage('right')}>
+			<img id="rightPreview" alt="Preview of the right" onclick="document.getElementById('right').click()" src="{images['right'].src ? images['right'].src : ''}" style="width: 50px;image-rendering: pixelated;display:{images['right'].src ? '' : 'none'}">
+			<button id="rightButton" onclick="document.getElementById('right').click()" style="padding: 0;height: fit-content;display:{images['right'].src ? 'none' : ''}">
 				<i class='bx bx-image-add bx-md'></i>
 			</button>
 		</div>
@@ -602,6 +628,7 @@ function downloadCompressed(image) {
 {/if}
 <input type="checkbox" id="twoFaces" bind:checked={twoFaces} on:change={updateCanvas}><label for="twoFaces">Two Sides</label>
 <br>
+{/if}
 <input type="checkbox" id="shadowBlock" bind:checked={hasShadow} on:change={updateCanvas}><label for="shadowBlock">Has Shadow</label>
 <br>
 {#each ["Cube","Slab", "Stair","Item","Json"] as types}
@@ -630,8 +657,13 @@ function downloadCompressed(image) {
 			const reader = new FileReader();
 			reader.onload = function(e) {
 				customModel = JSON.parse(e.target.result);
-				console.log(customModel);
-				updateJson();
+				let localImages = {};
+				Object.keys(customModel.textures || {}).forEach(key => {
+					localImages[key] = new Image();
+					localImages[key].name = key;
+				});
+				customImages = localImages;
+				console.log(customImages);
 			}
 			reader.readAsText(file);
 		}
